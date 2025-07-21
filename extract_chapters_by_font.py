@@ -8,7 +8,7 @@ import pypdf
 
 
 # Ajuste conforme necessário
-FONT_SIZE_THRESHOLD = 1  # Tamanho mínimo da fonte para considerar como título
+FONT_SIZE_THRESHOLD = 16  # Tamanho mínimo da fonte para considerar como título
 CHAPTER_PATTERNS = [
     re.compile(r'(Capítulo|CAPÍTULO)'),
 ]
@@ -24,13 +24,13 @@ logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 def sanitize_filename(name: str) -> str:
     return re.sub(r'[^\w\-_\. ]', '_', name)
 
-def generate_bigfont_txts(pdf_path: str, txt_dir: str) -> int:
+def generate_bigfont_txts(pdf_path: str, txt_dir: str, font_size: int) -> int:
     os.makedirs(txt_dir, exist_ok=True)
     page_count = 0
     with pdfplumber.open(pdf_path) as pdf:
         for i, page in enumerate(pdf.pages):
             def filter_by_size(obj):
-                return obj.get("size", 0) >= FONT_SIZE_THRESHOLD
+                return obj.get("size", 0) >= font_size
             filtered_page = page.filter(filter_by_size)
             text = filtered_page.extract_text() or ""
             with open(os.path.join(txt_dir, f"page_{i+1:03d}.txt"), "w", encoding="utf-8") as f:
@@ -94,9 +94,21 @@ def main():
     book_name = os.path.splitext(os.path.basename(pdf_path))[0]
     output_dir = os.path.join('capitulos_extraidos', book_name)
     txt_dir = os.path.join('txt_fontes_grandes', book_name)
-    print(f"Gerando arquivos .txt apenas com fontes grandes em {txt_dir}...")
-    generate_bigfont_txts(pdf_path, txt_dir)
-    chapter_starts = extract_chapter_starts_from_txts(txt_dir)
+
+    font_size = FONT_SIZE_THRESHOLD
+    min_font_size = 1
+    chapter_starts = []
+    while font_size >= min_font_size:
+        print(f"Gerando arquivos .txt apenas com fontes >= {font_size} em {txt_dir}...")
+        generate_bigfont_txts(pdf_path, txt_dir, font_size)
+        chapter_starts = extract_chapter_starts_from_txts(txt_dir)
+        if chapter_starts:
+            break
+        logging.warning(f"Nenhum capítulo detectado com FONT_SIZE_THRESHOLD={font_size}. Removendo validação por tamanho de fonte...")
+        font_size -= 15
+    if not chapter_starts:
+        logging.error("Nenhum capítulo detectado mesmo após diminuir o FONT_SIZE_THRESHOLD.")
+        sys.exit(1)
     logging.info(f"Capítulos detectados: {len(chapter_starts)}")
     for idx, (page_num, title) in enumerate(chapter_starts):
         logging.info(f"Capítulo {idx+1}: '{title}' na página {page_num+1}")

@@ -1,0 +1,3 @@
+Capítulo 2 - Criando os seus primeiros
+programas.
+Mas afinal, que é um Algoritmo?

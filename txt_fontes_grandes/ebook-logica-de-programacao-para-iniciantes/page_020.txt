@@ -1,0 +1,3 @@
+Capítulo 3 - Variáveis, constantes e tipos
+de dados.
+O que são variáveis constantes?
