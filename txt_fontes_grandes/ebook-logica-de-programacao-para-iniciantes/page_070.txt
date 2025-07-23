@@ -1,1 +1,0 @@
-Qual a diferença entre função e procedimento?

@@ -1,2 +1,0 @@
-Conclusão
-Te desafio a criar um jogo da velha!
